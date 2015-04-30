@@ -90,7 +90,7 @@ namespace Microsoft.Framework.Runtime.Tests
             string projectContent;
             if (jsonPropertyValue != null)
             {
-                projectContent = string.Format("{{ \"{0}\": \"{1}\" }}", jsonPropertyName, jsonPropertyValue);
+                projectContent = string.Format("{{ \"{0}\": {1} }}", jsonPropertyName, jsonPropertyValue);
             }
             else
             {
@@ -430,6 +430,7 @@ namespace Microsoft.Framework.Runtime.Tests
             var dnx451Options = project.GetCompilerOptions(FrameworkNameHelper.ParseFrameworkName("dnx451"));
             Assert.NotNull(dnx451Options);
             Assert.Equal(new[] { "DNX451" }, dnx451Options.Defines);
+            Assert.Null(dnx451Options.AllowUnsafe);
 
             var aspnetCore50Options = project.GetCompilerOptions(FrameworkNameHelper.ParseFrameworkName("dnxcore50"));
             Assert.NotNull(aspnetCore50Options);
@@ -455,27 +456,6 @@ namespace Microsoft.Framework.Runtime.Tests
 @"c:\foo\project.json");
 
             Assert.Equal("https://github.com/aspnet/KRuntime", project.ProjectUrl);
-        }
-
-        [Fact]
-        public void RequireLicenseAcceptanceIsSet()
-        {
-            var project = Project.GetProject(@"
-{
-    ""requireLicenseAcceptance"": ""true""
-}",
-"foo",
-@"c:\foo\project.json");
-
-            Assert.True(project.RequireLicenseAcceptance);
-        }
-
-        [Fact]
-        public void RequireLicenseAcceptanceDefaultValueIsFalse()
-        {
-            var project = Project.GetProject(@" { }", "foo", @"c:\foo\project.json");
-
-            Assert.False(project.RequireLicenseAcceptance);
         }
 
         [Fact]

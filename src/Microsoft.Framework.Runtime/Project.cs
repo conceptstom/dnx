@@ -25,8 +25,6 @@ namespace Microsoft.Framework.Runtime
 
         internal static TypeInformation DefaultCompiler = DefaultRuntimeCompiler;
 
-        private static readonly CompilerOptions _emptyOptions = new CompilerOptions();
-
         private readonly Dictionary<FrameworkName, TargetFrameworkInformation> _targetFrameworks = new Dictionary<FrameworkName, TargetFrameworkInformation>();
         private readonly Dictionary<FrameworkName, CompilerOptions> _compilationOptions = new Dictionary<FrameworkName, CompilerOptions>();
         private readonly Dictionary<string, CompilerOptions> _configurations = new Dictionary<string, CompilerOptions>(StringComparer.OrdinalIgnoreCase);
@@ -122,7 +120,7 @@ namespace Microsoft.Framework.Runtime
 
             string projectPath = null;
 
-            if (String.Equals(Path.GetFileName(path), ProjectFileName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(Path.GetFileName(path), ProjectFileName, StringComparison.OrdinalIgnoreCase))
             {
                 projectPath = path;
                 path = Path.GetDirectoryName(path);
@@ -166,8 +164,6 @@ namespace Microsoft.Framework.Runtime
 
         internal static Project GetProjectFromStream(Stream stream, string projectName, string projectPath, ICollection<ICompilationMessage> diagnostics = null)
         {
-            //Debugger.Launch();
-
             var project = new Project();
 
             var reader = new JsonTextReader(new StreamReader(stream));
@@ -318,12 +314,12 @@ namespace Microsoft.Framework.Runtime
                 }
             });
 
-            project.BuildTargetFrameworksAndConfigurations(rawProject, rawProject2);
+            project.BuildTargetFrameworksAndConfigurations(rawProject2);
 
             PopulateDependencies(
                 project.ProjectFilePath,
                 project.Dependencies,
-                rawProject,
+                rawProject2,
                 "dependencies",
                 isGacOrFrameworkReference: false);
 
@@ -402,8 +398,9 @@ namespace Microsoft.Framework.Runtime
                         {
                             dependencyVersionRange = VersionUtility.ParseVersionRange(dependencyVersionValue);
                         }
-                        catch (Exception ex)
+                        catch (Exception /*ex*/)
                         {
+                            throw new FieldAccessException("Failed to parse version range from: " + dependencyVersionValue);
                             //throw FileFormatException.Create(
                             //    ex,
                             //    dependencyVersionToken,
@@ -411,18 +408,19 @@ namespace Microsoft.Framework.Runtime
                         }
                     }
 
-                    var dependencyLineInfo = (IJsonLineInfo)dependency;
+                    //var dependencyLineInfo = (IJsonLineInfo)dependency;
 
                     results.Add(new LibraryDependency
                     {
                         LibraryRange = new LibraryRange
                         {
-                            Name = dependency.Name,
+                            Name = dependencyKey,
                             VersionRange = dependencyVersionRange,
                             IsGacOrFrameworkReference = isGacOrFrameworkReference,
                             FileName = projectPath,
-                            Line = dependencyLineInfo.LineNumber,
-                            Column = dependencyLineInfo.LinePosition
+                            // TODO: add them back
+                            //Line = dependencyLineInfo.LineNumber,
+                            //Column = dependencyLineInfo.LinePosition
                         },
                         Type = dependencyTypeValue
                     });
@@ -453,30 +451,6 @@ namespace Microsoft.Framework.Runtime
             }
 
             result = collection.SelectMany(value => value.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries));
-            return true;
-        }
-
-        private static bool TryGetStringEnumerable(JToken token, out IEnumerable<string> result)
-        {
-            IEnumerable<string> values;
-            if (token == null)
-            {
-                result = null;
-                return false;
-            }
-            else if (token.Type == JTokenType.String)
-            {
-                values = new[]
-                {
-                    token.Value<string>()
-                };
-            }
-            else
-            {
-                values = token.Value<string[]>();
-            }
-            result = values
-                .SelectMany(value => value.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries));
             return true;
         }
 
@@ -537,10 +511,10 @@ namespace Microsoft.Framework.Runtime
             return targetFrameworkInfo ?? _defaultTargetFrameworkConfiguration;
         }
 
-        private void BuildTargetFrameworksAndConfigurations(JObject rawProject, JsonObject rawProject2)
+        private void BuildTargetFrameworksAndConfigurations(JsonObject projectJsonObject)
         {
             // Get the shared compilationOptions
-            _defaultCompilerOptions = GetCompilationOptions(rawProject2) ?? _emptyOptions;
+            _defaultCompilerOptions = GetCompilationOptions(projectJsonObject) ?? new CompilerOptions();
 
             _defaultTargetFrameworkConfiguration = new TargetFrameworkInformation
             {
@@ -572,7 +546,7 @@ namespace Microsoft.Framework.Runtime
                 }
             */
 
-            var configurations = rawProject2.ValueAsJsonObject("configurations");
+            var configurations = projectJsonObject.ValueAsJsonObject("configurations");
             if (configurations != null)
             {
                 foreach (var configKey in configurations.Keys)
@@ -596,28 +570,35 @@ namespace Microsoft.Framework.Runtime
                 }
             */
 
-            var frameworks = rawProject2.ValueAsJsonObject("frameworks");
+            var frameworks = projectJsonObject.ValueAsJsonObject("frameworks");
             if (frameworks != null)
             {
                 foreach (var frameworkKey in frameworks.Keys)
                 {
                     try
                     {
-                        BuildTargetFrameworkNode(frameworkKey, frameworks.ValueAsJsonObject(frameworkKey);
+                        BuildTargetFrameworkNode(frameworkKey, frameworks.ValueAsJsonObject(frameworkKey));
                     }
                     catch (Exception ex)
                     {
-                        throw FileFormatException.Create(ex, framework.Value, ProjectFilePath);
+                        throw new FileFormatException(string.Format("Failed to parse framework {0}.", frameworkKey), ex);
+                        //throw FileFormatException.Create(ex, framework.Value, ProjectFilePath);
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// Parse a Json object which represents project configuration for a specified framework
+        /// </summary>
+        /// <param name="frameworkKey">The name of the framework</param>
+        /// <param name="frameworkValue">The Json object represent the settings</param>
+        /// <returns>Returns true if it successes.</returns>
         private bool BuildTargetFrameworkNode(string frameworkKey, JsonObject frameworkValue)
-        //KeyValuePair<string, JToken> targetFramework)
         {
             // If no compilation options are provided then figure them out from the node
-            var compilerOptions = GetCompilationOptions(frameworkValue) ?? _emptyOptions;
+            var compilerOptions = GetCompilationOptions(frameworkValue) ??
+                                  new CompilerOptions();
 
             var frameworkName = FrameworkNameHelper.ParseFrameworkName(frameworkKey);
 
@@ -660,21 +641,20 @@ namespace Microsoft.Framework.Runtime
             PopulateDependencies(
                 ProjectFilePath,
                 frameworkAssemblies,
-                properties,
+                frameworkValue,
                 "frameworkAssemblies",
                 isGacOrFrameworkReference: true);
 
             frameworkDependencies.AddRange(frameworkAssemblies);
             targetFrameworkInformation.Dependencies = frameworkDependencies;
 
-            targetFrameworkInformation.WrappedProject = properties.GetValue<string>("wrappedProject");
+            targetFrameworkInformation.WrappedProject = frameworkValue.ValueAsString("wrappedProject");
 
-            var binNode = properties["bin"];
-
+            var binNode = frameworkValue.ValueAsJsonObject("bin");
             if (binNode != null)
             {
-                targetFrameworkInformation.AssemblyPath = binNode.GetValue<string>("assembly");
-                targetFrameworkInformation.PdbPath = binNode.GetValue<string>("pdb");
+                targetFrameworkInformation.AssemblyPath = binNode.ValueAsString("assembly");
+                targetFrameworkInformation.PdbPath = binNode.ValueAsString("pdb");
             }
 
             _compilationOptions[frameworkName] = compilerOptions;
@@ -699,26 +679,6 @@ namespace Microsoft.Framework.Runtime
                 Platform = rawOptions.ValueAsString("platform"),
                 WarningsAsErrors = rawOptions.ValueAsNullableBoolean("warningsAsErrors"),
                 Optimize = rawOptions.ValueAsNullableBoolean("optimize"),
-            };
-        }
-
-        private CompilerOptions GetCompilationOptions(JToken topLevelOrConfiguration)
-        {
-            var rawOptions = topLevelOrConfiguration["compilationOptions"];
-
-            if (rawOptions == null)
-            {
-                return null;
-            }
-
-            return new CompilerOptions()
-            {
-                Defines = rawOptions.ValueAsArray<string>("define"),
-                LanguageVersion = rawOptions.GetValue<string>("languageVersion"),
-                AllowUnsafe = rawOptions.GetValue<bool?>("allowUnsafe"),
-                Platform = rawOptions.GetValue<string>("platform"),
-                WarningsAsErrors = rawOptions.GetValue<bool?>("warningsAsErrors"),
-                Optimize = rawOptions.GetValue<bool?>("optimize"),
             };
         }
     }

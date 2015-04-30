@@ -29,9 +29,29 @@ namespace Microsoft.Framework.Runtime.Json
             return result;
         }
 
-        public T ValueAs<T>(string key, Func<object, T> converter)
+        public T ValueAs<T>(string key)
         {
-            return converter(Value(key));
+            object value = Value(key);
+            if (value == null)
+            {
+                return default(T);
+            }
+            else
+            {
+                try
+                {
+                    return (T)value;
+                }
+                catch (InvalidCastException)
+                {
+                    return default(T);
+                }
+            }
+        }
+
+        public T ValueAs<T>(string key, Func<object, T> cast)
+        {
+            return cast(Value(key));
         }
 
         public JsonObject ValueAsJsonObject(string key)
@@ -60,10 +80,9 @@ namespace Microsoft.Framework.Runtime.Json
         {
             return ValueAs(key, value =>
             {
-                bool result;
-                if (value != null && (value is string) && bool.TryParse((string)value, out result))
+                if (value != null && value is bool)
                 {
-                    return result;
+                    return (bool)value;
                 }
 
                 return defaultValue;
@@ -74,10 +93,9 @@ namespace Microsoft.Framework.Runtime.Json
         {
             return ValueAs<bool?>(key, value =>
             {
-                bool result;
-                if (value != null && value is string && bool.TryParse((string)value, out result))
+                if (value != null && value is bool)
                 {
-                    return result;
+                    return (bool?)value;
                 }
                 else
                 {
