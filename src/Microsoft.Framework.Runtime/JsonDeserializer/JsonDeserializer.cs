@@ -17,9 +17,6 @@ namespace Microsoft.Framework.Runtime.Json
 
         private JsonString _input;
 
-        /// <summary>
-        /// </summary>
-
         public object Deserialize(string input)
         {
             if (input == null)
