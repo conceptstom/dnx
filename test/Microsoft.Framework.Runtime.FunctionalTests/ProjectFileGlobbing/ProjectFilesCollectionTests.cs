@@ -158,7 +158,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""compile"": ""../../lib/**/*.cs"",
+    ""compile"": ""../../lib/**/*.cs""
 }
 ", @"src\project");
 
@@ -174,7 +174,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""code"": ""../../lib/**/*.cs"",
+    ""code"": ""../../lib/**/*.cs""
 }
 ", @"src\project");
 
@@ -190,7 +190,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""compile"": ""..\\..\\lib\\**\\*.cs"",
+    ""compile"": ""..\\..\\lib\\**\\*.cs""
 }
 ", @"src\project");
 
@@ -206,7 +206,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""compile"": ""**\\*.cs;..\\..\\lib\\**\\*.cs"",
+    ""compile"": ""**\\*.cs;..\\..\\lib\\**\\*.cs""
 }
 ", @"src\project");
 
@@ -227,7 +227,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""code"": ""**\\*.cs;..\\..\\lib\\**\\*.cs"",
+    ""code"": ""**\\*.cs;..\\..\\lib\\**\\*.cs""
 }
 ", @"src\project");
 
@@ -248,7 +248,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""compile"": ""**\\*.cs;..\\..\\lib\\*.cs"",
+    ""compile"": ""**\\*.cs;..\\..\\lib\\*.cs""
 }
 ", @"src\project");
 
@@ -267,7 +267,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
             var testFilesCollection = CreateFilesCollection(@"
 {
     ""compileBuiltIn"": """",
-    ""compile"": ""..\\..\\lib\\sub4\\source8.cs"",
+    ""compile"": ""..\\..\\lib\\sub4\\source8.cs""
 }
 ", @"src\project");
 
@@ -280,7 +280,7 @@ namespace Microsoft.Framework.Runtime.FunctionalTests.ProjectFileGlobbing
         {
             var testFilesCollection = CreateFilesCollection(@"
 {
-    ""compile"": ""**\\*.cs;..\\..\\lib\\sub4\\source8.cs"",
+    ""compile"": ""**\\*.cs;..\\..\\lib\\sub4\\source8.cs""
 }
 ", @"src\project");
 
